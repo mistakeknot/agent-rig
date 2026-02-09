@@ -1,4 +1,5 @@
 import { readFile } from "node:fs/promises";
+import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { AgentRigSchema, type AgentRig } from "./schema.js";
 
@@ -17,6 +18,11 @@ export type LocalSource = {
 export type RigSource = GitHubSource | LocalSource;
 
 export function resolveSource(input: string): RigSource {
+  // Absolute or explicitly relative paths are always local
+  if (input.startsWith("/") || input.startsWith("./") || input.startsWith("../")) {
+    return { type: "local", path: input };
+  }
+
   // Full GitHub URL
   const ghUrlMatch = input.match(
     /^https?:\/\/github\.com\/([^/]+)\/([^/.]+)/,
@@ -30,6 +36,11 @@ export function resolveSource(input: string): RigSource {
     };
   }
 
+  // If it exists on disk, treat as local (handles "examples/clavain")
+  if (existsSync(input)) {
+    return { type: "local", path: input };
+  }
+
   // GitHub owner/repo shorthand
   const shortMatch = input.match(/^([a-zA-Z0-9_.-]+)\/([a-zA-Z0-9_.-]+)$/);
   if (shortMatch) {
@@ -41,7 +52,7 @@ export function resolveSource(input: string): RigSource {
     };
   }
 
-  // Local path
+  // Local path (fallback)
   return { type: "local", path: input };
 }
 

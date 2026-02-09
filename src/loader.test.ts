@@ -33,6 +33,17 @@ describe("resolveSource", () => {
       url: "https://github.com/mistakeknot/Clavain.git",
     });
   });
+
+  it("treats relative paths as local", () => {
+    const result = resolveSource("./examples/clavain");
+    assert.deepEqual(result, { type: "local", path: "./examples/clavain" });
+  });
+
+  it("treats existing directories as local even if they match owner/repo", () => {
+    // "examples/clavain" exists on disk, so it should be local not GitHub
+    const result = resolveSource("examples/clavain");
+    assert.deepEqual(result, { type: "local", path: "examples/clavain" });
+  });
 });
 
 describe("loadManifest", () => {
