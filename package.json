@@ -1,0 +1,39 @@
+{
+  "name": "agent-rig",
+  "version": "0.1.0",
+  "description": "The modpack system for AI coding agents — package, share, and install complete agent rigs with one command",
+  "type": "module",
+  "bin": {
+    "agent-rig": "./dist/index.js"
+  },
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "start": "node dist/index.js",
+    "test": "node --test dist/**/*.test.js",
+    "lint": "tsc --noEmit"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "license": "MIT",
+  "keywords": [
+    "agent-rig",
+    "claude-code",
+    "modpack",
+    "plugins",
+    "mcp",
+    "codex"
+  ],
+  "dependencies": {
+    "chalk": "^5.6.2",
+    "commander": "^14.0.3",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@types/node": "^25.2.2",
+    "typescript": "^5.9.3"
+  }
+}
