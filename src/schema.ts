@@ -12,10 +12,7 @@ const ConflictRef = z.object({
   reason: z.string().optional(),
 });
 
-const CorePluginRef = z.object({
-  source: z.string().describe("The core plugin identifier"),
-  description: z.string().optional(),
-});
+// CorePluginRef is identical to PluginRef — use PluginRef directly
 
 // --- MCP Servers ---
 
@@ -53,10 +50,21 @@ const ExternalTool = z.object({
   check: z.string().describe("Shell command to check if tool is already installed"),
   optional: z.boolean().default(false),
   description: z.string().optional(),
-  platforms: z
-    .record(z.string(), z.string())
+});
+
+// --- Behavioral config ---
+
+const BehavioralAsset = z.object({
+  source: z.string().describe("Path to file/dir in rig repo"),
+  dependedOnBy: z
+    .array(z.string())
     .optional()
-    .describe("Platform-specific install commands"),
+    .describe("Components that depend on this being followed"),
+});
+
+const Behavioral = z.object({
+  "claude-md": BehavioralAsset.optional(),
+  "agents-md": BehavioralAsset.optional(),
 });
 
 // --- Platform adapters ---
@@ -82,12 +90,10 @@ const CodexPlatform = z.object({
     .describe("Where to symlink skills for Codex"),
 });
 
-const Platforms = z
-  .object({
-    "claude-code": ClaudeCodePlatform.optional(),
-    codex: CodexPlatform.optional(),
-  })
-  .catchall(z.record(z.string(), z.unknown()));
+const Platforms = z.object({
+  "claude-code": ClaudeCodePlatform.optional(),
+  codex: CodexPlatform.optional(),
+});
 
 // --- Top-level schema ---
 
@@ -96,7 +102,7 @@ export const AgentRigSchema = z.object({
   name: z
     .string()
     .regex(/^[a-z0-9-]+$/, "Must be lowercase kebab-case"),
-  version: z.string().regex(/^\d+\.\d+\.\d+/, "Must be semver"),
+  version: z.string().regex(/^\d+\.\d+\.\d+$/, "Must be semver"),
   description: z.string(),
   author: z.string(),
   license: z.string().optional(),
@@ -112,7 +118,7 @@ export const AgentRigSchema = z.object({
   // Layer 1+2: Plugins
   plugins: z
     .object({
-      core: CorePluginRef.optional(),
+      core: PluginRef.optional(),
       required: z.array(PluginRef).optional(),
       recommended: z.array(PluginRef).optional(),
       infrastructure: z.array(PluginRef).optional(),
@@ -128,6 +134,9 @@ export const AgentRigSchema = z.object({
 
   // Layer 4: Environment variables
   environment: z.record(z.string(), z.string()).optional(),
+
+  // Layer 5: Behavioral config (CLAUDE.md, AGENTS.md)
+  behavioral: Behavioral.optional(),
 
   // Platform-specific configuration
   platforms: Platforms.optional(),

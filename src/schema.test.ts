@@ -111,6 +111,65 @@ describe("AgentRigSchema", () => {
     assert.ok(!result.success);
   });
 
+  it("validates a manifest with behavioral config", () => {
+    const manifest = {
+      name: "my-rig",
+      version: "1.0.0",
+      description: "A rig with behavioral config",
+      author: "testuser",
+      behavioral: {
+        "claude-md": {
+          source: "config/CLAUDE.md",
+          dependedOnBy: ["hooks.PreToolUse", "commands/commit"],
+        },
+        "agents-md": {
+          source: "config/AGENTS.md",
+        },
+      },
+    };
+    const result = AgentRigSchema.safeParse(manifest);
+    assert.ok(
+      result.success,
+      `Validation failed: ${JSON.stringify(result.error?.issues)}`,
+    );
+  });
+
+  it("validates a manifest with behavioral config without dependedOnBy", () => {
+    const manifest = {
+      name: "my-rig",
+      version: "1.0.0",
+      description: "A rig with behavioral config",
+      author: "testuser",
+      behavioral: {
+        "claude-md": {
+          source: "config/CLAUDE.md",
+        },
+      },
+    };
+    const result = AgentRigSchema.safeParse(manifest);
+    assert.ok(
+      result.success,
+      `Validation failed: ${JSON.stringify(result.error?.issues)}`,
+    );
+  });
+
+  it("accepts manifest without behavioral field (backward compat)", () => {
+    const manifest = {
+      name: "legacy-rig",
+      version: "1.0.0",
+      description: "A rig without behavioral config",
+      author: "testuser",
+      plugins: {
+        core: { source: "my-plugin@marketplace" },
+      },
+    };
+    const result = AgentRigSchema.safeParse(manifest);
+    assert.ok(
+      result.success,
+      `Validation failed: ${JSON.stringify(result.error?.issues)}`,
+    );
+  });
+
   it("validates the extends field for future composition", () => {
     const manifest = {
       name: "go-dev",

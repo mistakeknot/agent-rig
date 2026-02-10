@@ -12,5 +12,6 @@ export interface PlatformAdapter {
   installPlugins(rig: AgentRig): Promise<InstallResult[]>;
   disableConflicts(rig: AgentRig): Promise<InstallResult[]>;
   addMarketplaces(rig: AgentRig): Promise<InstallResult[]>;
+  installBehavioral(rig: AgentRig, rigDir: string): Promise<InstallResult[]>;
   verify(rig: AgentRig): Promise<InstallResult[]>;
 }

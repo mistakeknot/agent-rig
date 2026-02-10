@@ -1,16 +1,12 @@
 import chalk from "chalk";
-import { execFile } from "node:child_process";
-import { join } from "node:path";
-import { tmpdir } from "node:os";
-import { promisify } from "node:util";
+import { createInterface } from "node:readline";
 import { loadManifest } from "../loader.js";
-import { resolveSource, type RigSource } from "../loader.js";
+import { resolveSource } from "../loader.js";
+import { execFileAsync, cloneToLocal } from "../exec.js";
 import { ClaudeCodeAdapter } from "../adapters/claude-code.js";
 import { CodexAdapter } from "../adapters/codex.js";
 import type { InstallResult, PlatformAdapter } from "../adapters/types.js";
 import type { AgentRig } from "../schema.js";
-
-const execFileAsync = promisify(execFile);
 
 function printResults(section: string, results: InstallResult[]) {
   if (results.length === 0) return;
@@ -29,15 +25,67 @@ function printResults(section: string, results: InstallResult[]) {
   }
 }
 
-async function cloneToLocal(source: RigSource): Promise<string> {
-  if (source.type === "local") return source.path;
-
-  const dest = join(tmpdir(), `agent-rig-${source.repo}-${Date.now()}`);
-  console.log(chalk.dim(`Cloning ${source.url}...`));
-  await execFileAsync("git", ["clone", "--depth", "1", source.url, dest], {
-    timeout: 60_000,
+async function confirm(message: string): Promise<boolean> {
+  const rl = createInterface({ input: process.stdin, output: process.stdout });
+  return new Promise((resolve) => {
+    rl.question(`${message} [y/N] `, (answer) => {
+      rl.close();
+      resolve(answer.trim().toLowerCase() === "y");
+    });
   });
-  return dest;
+}
+
+function printInstallPlan(rig: AgentRig, activeAdapters: PlatformAdapter[]) {
+  console.log(chalk.bold("\nInstall Plan:"));
+
+  const plugins = [
+    ...(rig.plugins?.core ? [rig.plugins.core] : []),
+    ...(rig.plugins?.required ?? []),
+    ...(rig.plugins?.recommended ?? []),
+    ...(rig.plugins?.infrastructure ?? []),
+  ];
+  if (plugins.length > 0) {
+    console.log(`  ${chalk.green("Install")} ${plugins.length} plugins`);
+  }
+
+  const conflicts = rig.plugins?.conflicts ?? [];
+  if (conflicts.length > 0) {
+    console.log(`  ${chalk.yellow("Disable")} ${conflicts.length} conflicting plugins`);
+  }
+
+  const mcpCount = Object.keys(rig.mcpServers ?? {}).length;
+  if (mcpCount > 0) {
+    console.log(`  ${chalk.cyan("Configure")} ${mcpCount} MCP servers`);
+  }
+
+  const tools = (rig.tools ?? []).filter((t) => !t.optional);
+  const optTools = (rig.tools ?? []).filter((t) => t.optional);
+  if (tools.length > 0) {
+    console.log(`  ${chalk.magenta("Install")} ${tools.length} tools via shell commands:`);
+    for (const t of tools) {
+      console.log(chalk.dim(`    check: $ ${t.check}`));
+      console.log(chalk.dim(`    install: $ ${t.install}`));
+    }
+  }
+  if (optTools.length > 0) {
+    console.log(`  ${chalk.dim("Skip")} ${optTools.length} optional tools (check commands):`);
+    for (const t of optTools) {
+      console.log(chalk.dim(`    check: $ ${t.check}`));
+    }
+  }
+
+  if (rig.behavioral) {
+    const behavioralAssets: string[] = [];
+    if (rig.behavioral["claude-md"]) behavioralAssets.push("CLAUDE.md");
+    if (rig.behavioral["agents-md"]) behavioralAssets.push("AGENTS.md");
+    if (behavioralAssets.length > 0) {
+      console.log(
+        `  ${chalk.blue("Behavioral")} ${behavioralAssets.join(", ")} → .claude/rigs/${rig.name}/`,
+      );
+    }
+  }
+
+  console.log(`  Platforms: ${activeAdapters.map((a) => a.name).join(", ")}`);
 }
 
 async function installTools(rig: AgentRig): Promise<InstallResult[]> {
@@ -68,11 +116,12 @@ async function installTools(rig: AgentRig): Promise<InstallResult[]> {
     try {
       await execFileAsync("sh", ["-c", tool.install], { timeout: 120_000 });
       results.push({ component: `tool:${tool.name}`, status: "installed" });
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
       results.push({
         component: `tool:${tool.name}`,
         status: "failed",
-        message: err.message,
+        message,
       });
     }
   }
@@ -81,7 +130,7 @@ async function installTools(rig: AgentRig): Promise<InstallResult[]> {
 
 export async function installCommand(
   sourceArg: string,
-  opts: { dryRun?: boolean },
+  opts: { dryRun?: boolean; yes?: boolean },
 ) {
   console.log(chalk.bold(`\nAgent Rig Installer\n`));
 
@@ -96,6 +145,19 @@ export async function installCommand(
 
   if (opts.dryRun) {
     console.log(chalk.yellow("\nDry run — no changes will be made.\n"));
+
+    // Detect platforms for plan display
+    const dryAdapters: PlatformAdapter[] = [
+      new ClaudeCodeAdapter(),
+      new CodexAdapter(),
+    ];
+    const dryActive: PlatformAdapter[] = [];
+    for (const adapter of dryAdapters) {
+      if (await adapter.detect()) dryActive.push(adapter);
+    }
+    printInstallPlan(rig, dryActive.length > 0 ? dryActive : dryAdapters);
+
+    console.log(chalk.dim("\nFull manifest:"));
     console.log(JSON.stringify(rig, null, 2));
     return;
   }
@@ -124,6 +186,17 @@ export async function installCommand(
     process.exit(1);
   }
 
+  // Show install plan and require confirmation
+  printInstallPlan(rig, activeAdapters);
+
+  if (!opts.yes) {
+    const ok = await confirm("\nProceed with installation?");
+    if (!ok) {
+      console.log(chalk.yellow("Aborted."));
+      return;
+    }
+  }
+
   for (const adapter of activeAdapters) {
     console.log(chalk.bold(`\n--- ${adapter.name} ---`));
 
@@ -135,6 +208,11 @@ export async function installCommand(
 
     const conflictResults = await adapter.disableConflicts(rig);
     printResults("Conflicts Disabled", conflictResults);
+
+    if (rig.behavioral) {
+      const behavioralResults = await adapter.installBehavioral(rig, dir);
+      printResults("Behavioral Config", behavioralResults);
+    }
   }
 
   const toolResults = await installTools(rig);

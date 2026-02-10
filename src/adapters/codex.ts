@@ -1,9 +1,6 @@
-import { execFile } from "node:child_process";
-import { promisify } from "node:util";
 import type { AgentRig } from "../schema.js";
 import type { InstallResult, PlatformAdapter } from "./types.js";
-
-const execFileAsync = promisify(execFile);
+import { execFileAsync } from "../exec.js";
 
 export class CodexAdapter implements PlatformAdapter {
   name = "codex";
@@ -22,8 +19,8 @@ export class CodexAdapter implements PlatformAdapter {
   }
 
   async installPlugins(rig: AgentRig): Promise<InstallResult[]> {
-    const codexConfig = rig.platforms?.["codex"];
-    if (!codexConfig || typeof codexConfig !== "object") {
+    const codexConfig = rig.platforms?.codex;
+    if (!codexConfig) {
       return [
         {
           component: "codex-config",
@@ -34,25 +31,30 @@ export class CodexAdapter implements PlatformAdapter {
     }
 
     const results: InstallResult[] = [];
-    const installScript = (codexConfig as any).installScript;
-    if (installScript) {
+    if (codexConfig.installScript) {
       try {
-        await execFileAsync("bash", [installScript, "install"], {
+        await execFileAsync("bash", [codexConfig.installScript, "install"], {
           timeout: 60_000,
         });
         results.push({
           component: "codex-install-script",
           status: "installed",
         });
-      } catch (err: any) {
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : String(err);
         results.push({
           component: "codex-install-script",
           status: "failed",
-          message: err.message,
+          message,
         });
       }
     }
     return results;
+  }
+
+  async installBehavioral(_rig: AgentRig, _rigDir: string): Promise<InstallResult[]> {
+    // Codex CLI doesn't have CLAUDE.md — behavioral config is Claude Code only
+    return [];
   }
 
   async disableConflicts(_rig: AgentRig): Promise<InstallResult[]> {
