@@ -144,3 +144,4 @@ The `visited` set naturally handles cycles (falls back to original order) and th
 ## Related Issues
 
 - See also: [reversible-cli-install-with-mcp-config-agent-rig-20260211.md](reversible-cli-install-with-mcp-config-agent-rig-20260211.md) — P1 foundation (state tracking, MCP config, uninstall)
+- See also: [tagged-block-env-and-hash-based-merge-agent-rig-20260211.md](tagged-block-env-and-hash-based-merge-agent-rig-20260211.md) — P3 safe file management (shell profiles, modification detection)

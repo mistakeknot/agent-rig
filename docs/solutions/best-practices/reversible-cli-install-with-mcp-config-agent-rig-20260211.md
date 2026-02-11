@@ -129,3 +129,4 @@ The install command collects results from each adapter step, filters for `status
 ## Related Issues
 
 - See also: [state-diff-incremental-update-agent-rig-20260211.md](state-diff-incremental-update-agent-rig-20260211.md) — P2 extension (diff-based update, idempotent install, dependency ordering)
+- See also: [tagged-block-env-and-hash-based-merge-agent-rig-20260211.md](tagged-block-env-and-hash-based-merge-agent-rig-20260211.md) — P3 safe file management (shell profiles, modification detection)
