@@ -52,6 +52,11 @@ export class CodexAdapter implements PlatformAdapter {
     return results;
   }
 
+  async installMcpServers(_rig: AgentRig): Promise<InstallResult[]> {
+    // Codex CLI doesn't support MCP server configuration via CLI
+    return [];
+  }
+
   async installBehavioral(_rig: AgentRig, _rigDir: string): Promise<InstallResult[]> {
     // Codex CLI doesn't have CLAUDE.md — behavioral config is Claude Code only
     return [];

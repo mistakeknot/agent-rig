@@ -5,8 +5,10 @@ import { resolveSource } from "../loader.js";
 import { execFileAsync, cloneToLocal } from "../exec.js";
 import { ClaudeCodeAdapter } from "../adapters/claude-code.js";
 import { CodexAdapter } from "../adapters/codex.js";
+import { setRigState } from "../state.js";
 import type { InstallResult, PlatformAdapter } from "../adapters/types.js";
 import type { AgentRig } from "../schema.js";
+import type { RigState, InstalledMcpServer, InstalledBehavioral } from "../state.js";
 
 function printResults(section: string, results: InstallResult[]) {
   if (results.length === 0) return;
@@ -197,21 +199,36 @@ export async function installCommand(
     }
   }
 
+  // Collect all results for state tracking
+  const allPluginResults: InstallResult[] = [];
+  const allConflictResults: InstallResult[] = [];
+  const allMcpResults: InstallResult[] = [];
+  const allBehavioralResults: InstallResult[] = [];
+  const allMarketplaceResults: InstallResult[] = [];
+
   for (const adapter of activeAdapters) {
     console.log(chalk.bold(`\n--- ${adapter.name} ---`));
 
     const mpResults = await adapter.addMarketplaces(rig);
     printResults("Marketplaces", mpResults);
+    allMarketplaceResults.push(...mpResults);
 
     const pluginResults = await adapter.installPlugins(rig);
     printResults("Plugins", pluginResults);
+    allPluginResults.push(...pluginResults);
 
     const conflictResults = await adapter.disableConflicts(rig);
     printResults("Conflicts Disabled", conflictResults);
+    allConflictResults.push(...conflictResults);
+
+    const mcpResults = await adapter.installMcpServers(rig);
+    printResults("MCP Servers", mcpResults);
+    allMcpResults.push(...mcpResults);
 
     if (rig.behavioral) {
       const behavioralResults = await adapter.installBehavioral(rig, dir);
       printResults("Behavioral Config", behavioralResults);
+      allBehavioralResults.push(...behavioralResults);
     }
   }
 
@@ -226,6 +243,48 @@ export async function installCommand(
     }
   }
 
+  // Save installed state
+  const installedPlugins = allPluginResults
+    .filter((r) => r.status === "installed")
+    .map((r) => r.component.replace("plugin:", ""));
+  const disabledConflicts = allConflictResults
+    .filter((r) => r.status === "disabled")
+    .map((r) => r.component.replace("conflict:", ""));
+  const installedMcp: InstalledMcpServer[] = allMcpResults
+    .filter((r) => r.status === "installed")
+    .map((r) => {
+      const name = r.component.replace("mcp:", "");
+      const server = rig.mcpServers?.[name];
+      return { name, type: server?.type ?? "http" } as InstalledMcpServer;
+    });
+  const installedBehavioral: InstalledBehavioral[] = allBehavioralResults
+    .filter((r) => r.status === "installed" && !r.component.endsWith(":deps"))
+    .map((r) => {
+      const key = r.component.replace("behavioral:", "") as "claude-md" | "agents-md";
+      const filename = key === "claude-md" ? "CLAUDE.md" : "AGENTS.md";
+      return {
+        file: `.claude/rigs/${rig.name}/${filename}`,
+        pointerFile: filename,
+        pointerTag: `<!-- agent-rig:${rig.name} -->`,
+      };
+    });
+  const installedMarketplaces = allMarketplaceResults
+    .filter((r) => r.status === "installed")
+    .map((r) => r.component.replace("marketplace:", ""));
+
+  const rigState: RigState = {
+    name: rig.name,
+    version: rig.version,
+    source: sourceArg,
+    installedAt: new Date().toISOString(),
+    plugins: installedPlugins,
+    disabledConflicts,
+    mcpServers: installedMcp,
+    behavioral: installedBehavioral,
+    marketplaces: installedMarketplaces,
+  };
+  setRigState(rigState);
+
   console.log(chalk.bold("\n--- Verification ---"));
   for (const adapter of activeAdapters) {
     const verifyResults = await adapter.verify(rig);
@@ -235,5 +294,6 @@ export async function installCommand(
   console.log(
     chalk.bold.green(`\n${rig.name} v${rig.version} installed successfully.\n`),
   );
+  console.log(chalk.dim("State saved to ~/.agent-rig/state.json"));
   console.log("Restart your Claude Code session to activate all changes.");
 }

@@ -1,7 +1,7 @@
 {
   "name": "clavain",
-  "version": "0.4.18",
-  "description": "General-purpose engineering discipline rig — 29 agents, 24 commands, 34 skills, 3 MCP servers. Combines workflow discipline with specialized execution agents.",
+  "version": "0.4.31",
+  "description": "General-purpose engineering discipline rig — 16 agents, 23 commands, 33 skills, 2 MCP servers. Combines workflow discipline with specialized execution agents.",
   "author": "mistakeknot",
   "license": "MIT",
   "repository": "mistakeknot/Clavain",
@@ -10,8 +10,13 @@
     "code-review",
     "workflow-automation",
     "tdd",
+    "debugging",
+    "planning",
     "agents",
-    "cross-ai-review"
+    "general-purpose",
+    "cross-ai-review",
+    "oracle",
+    "council"
   ],
 
   "plugins": {
@@ -21,16 +26,19 @@
     },
     "required": [
       { "source": "context7@claude-plugins-official", "description": "Runtime doc fetching via MCP" },
-      { "source": "explanatory-output-style@claude-plugins-official", "description": "Educational output formatting" },
+      { "source": "explanatory-output-style@claude-plugins-official", "description": "Educational output formatting" }
+    ],
+    "recommended": [
       { "source": "interdoc@interagency-marketplace", "description": "AGENTS.md generation" },
+      { "source": "interclode@interagency-marketplace", "description": "Codex CLI dispatch infrastructure" },
+      { "source": "auracoil@interagency-marketplace", "description": "Cross-AI AGENTS.md review" },
+      { "source": "tool-time@interagency-marketplace", "description": "Tool usage analytics" },
       { "source": "agent-sdk-dev@claude-plugins-official", "description": "Agent SDK development tools" },
       { "source": "plugin-dev@claude-plugins-official", "description": "Plugin development tools" },
       { "source": "serena@claude-plugins-official", "description": "Semantic coding tools" },
-      { "source": "security-guidance@claude-plugins-official", "description": "Security best practices" },
-      { "source": "auracoil@interagency-marketplace", "description": "Cross-AI AGENTS.md review" },
-      { "source": "tool-time@interagency-marketplace", "description": "Tool usage analytics" }
+      { "source": "security-guidance@claude-plugins-official", "description": "Security best practices" }
     ],
-    "recommended": [
+    "infrastructure": [
       { "source": "gopls-lsp@claude-plugins-official", "description": "Go language server" },
       { "source": "pyright-lsp@claude-plugins-official", "description": "Python language server" },
       { "source": "typescript-lsp@claude-plugins-official", "description": "TypeScript language server" },
@@ -53,12 +61,6 @@
       "type": "http",
       "url": "https://mcp.context7.com/mcp",
       "description": "Runtime documentation fetching"
-    },
-    "mcp-agent-mail": {
-      "type": "http",
-      "url": "http://127.0.0.1:8765/mcp",
-      "description": "Multi-agent coordination and message routing",
-      "healthCheck": "http://127.0.0.1:8765/health"
     },
     "qmd": {
       "type": "stdio",

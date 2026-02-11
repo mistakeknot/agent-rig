@@ -1,34 +1,14 @@
 import chalk from "chalk";
-import { join } from "node:path";
-import { tmpdir } from "node:os";
-import { execFile } from "node:child_process";
-import { promisify } from "node:util";
 import { loadManifest } from "../loader.js";
 import { resolveSource } from "../loader.js";
-
-const execFileAsync = promisify(execFile);
+import { cloneToLocal } from "../exec.js";
 
 export async function inspectCommand(
   sourceArg: string,
   opts: { json?: boolean },
 ) {
   const source = resolveSource(sourceArg);
-
-  let dir: string;
-  if (source.type === "local") {
-    dir = source.path;
-  } else {
-    dir = join(
-      tmpdir(),
-      `agent-rig-inspect-${source.repo}-${Date.now()}`,
-    );
-    await execFileAsync(
-      "git",
-      ["clone", "--depth", "1", source.url, dir],
-      { timeout: 60_000 },
-    );
-  }
-
+  const dir = await cloneToLocal(source);
   const rig = await loadManifest(dir);
 
   if (opts.json) {

@@ -93,6 +93,43 @@ export class ClaudeCodeAdapter implements PlatformAdapter {
     return results;
   }
 
+  async installMcpServers(rig: AgentRig): Promise<InstallResult[]> {
+    const results: InstallResult[] = [];
+    for (const [name, server] of Object.entries(rig.mcpServers ?? {})) {
+      // Check if already configured
+      const existing = await run("claude", ["mcp", "get", name]);
+      if (existing.ok && !existing.output.includes("not found")) {
+        results.push({
+          component: `mcp:${name}`,
+          status: "skipped",
+          message: "already configured",
+        });
+        continue;
+      }
+
+      let addArgs: string[];
+      if (server.type === "http") {
+        addArgs = ["mcp", "add", "--transport", "http", "--scope", "user", name, server.url];
+      } else if (server.type === "sse") {
+        addArgs = ["mcp", "add", "--transport", "sse", "--scope", "user", name, server.url];
+      } else {
+        // stdio: command and args go after --
+        addArgs = [
+          "mcp", "add", "--scope", "user", name,
+          "--", server.command, ...(server.args ?? []),
+        ];
+      }
+
+      const { ok, output } = await run("claude", addArgs);
+      results.push({
+        component: `mcp:${name}`,
+        status: ok ? "installed" : "failed",
+        message: ok ? server.description : output,
+      });
+    }
+    return results;
+  }
+
   async installBehavioral(
     rig: AgentRig,
     rigDir: string,

@@ -43,9 +43,9 @@ export async function validateCommand(dir: string) {
         chalk.yellow(`  Extends:     ${rig.extends} (not resolved in v1)`),
       );
     }
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.log(chalk.red("Invalid!"));
-    console.log(err.message);
+    console.log(err instanceof Error ? err.message : String(err));
     process.exit(1);
   }
 }

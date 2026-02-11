@@ -4,18 +4,21 @@ import { installCommand } from "./commands/install.js";
 import { validateCommand } from "./commands/validate.js";
 import { inspectCommand } from "./commands/inspect.js";
 import { initCommand } from "./commands/init.js";
+import { statusCommand } from "./commands/status.js";
+import { uninstallCommand } from "./commands/uninstall.js";
 
 const program = new Command();
 
 program
   .name("agent-rig")
-  .description("The modpack system for AI coding agents")
+  .description("The rig manager for AI coding agents")
   .version("0.1.0");
 
 program
   .command("install <source>")
   .description("Install an agent rig from a GitHub repo or local path")
   .option("--dry-run", "Show what would be installed without making changes")
+  .option("-y, --yes", "Skip confirmation prompt")
   .action(installCommand);
 
 program
@@ -35,5 +38,16 @@ program
   .command("init [dir]")
   .description("Create a new agent-rig.json manifest")
   .action((dir) => initCommand(dir ?? "."));
+
+program
+  .command("status")
+  .description("Show installed rigs and their components")
+  .action(statusCommand);
+
+program
+  .command("uninstall <name>")
+  .description("Uninstall a rig and reverse its changes")
+  .option("-y, --yes", "Skip confirmation prompt")
+  .action(uninstallCommand);
 
 program.parse();

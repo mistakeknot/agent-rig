@@ -1,12 +1,28 @@
 # agent-rig
 
-The modpack system for AI coding agents — package, share, and install complete agent rigs with one command.
+The rig manager for AI coding agents — package, share, and install complete agent environments with one command.
 
-## What is an Agent Rig?
+## Plugins vs Rigs
 
-An agent rig is a collection of plugins, skills, MCP servers, and integrations that serves as a cohesive, turnkey system for working with AI coding agents. Inspired by PC game modpacks, rigs let you adopt someone's entire workflow setup with minimal effort.
+A **plugin** adds capabilities to your agent — skills, commands, hooks, MCP servers. It's what your agent *can do*.
 
-Instead of manually installing 10+ plugins, configuring MCP servers, resolving conflicts, and setting environment variables, you run one command:
+A **rig** creates the environment where those capabilities work together. On top of a core plugin, a rig manages:
+
+| Layer | What | Example |
+|---|---|---|
+| Plugin ecosystem | Companion plugins the core depends on or works best with | context7, serena, interdoc |
+| Conflict resolution | Plugins that clash and should be disabled | code-review, commit-commands |
+| External tools | CLI tools outside the plugin system | oracle, codex, beads |
+| MCP servers | With richer config than plugin.json allows | health checks, descriptions |
+| Environment variables | Shell env needed for tools to work | DISPLAY, CHROME_PATH |
+| Behavioral config | CLAUDE.md conventions the rig expects | trunk-based dev, tool usage rules |
+| Platform adapters | Per-platform setup | marketplaces, Codex skills dir |
+
+> **A plugin adds capabilities. A rig creates the environment where those capabilities work together.**
+
+Installing `clavain@interagency-marketplace` gives you the plugin. Running `agent-rig install mistakeknot/Clavain` gives you the plugin *plus* companion plugins, disables conflicting ones, sets up MCP servers, checks CLI tools, configures env vars, and installs behavioral conventions.
+
+Instead of doing all that manually, you run one command:
 
 ```bash
 npx agent-rig install mistakeknot/Clavain
@@ -139,6 +155,8 @@ Each tool specifies:
 | Command | Description |
 |---------|-------------|
 | `agent-rig install <source>` | Install a rig from GitHub or local path |
+| `agent-rig uninstall <name>` | Uninstall a rig and reverse its changes |
+| `agent-rig status` | Show installed rigs and their components |
 | `agent-rig inspect <source>` | Examine a rig's contents without installing |
 | `agent-rig validate [dir]` | Validate an `agent-rig.json` manifest |
 | `agent-rig init [dir]` | Scaffold a new `agent-rig.json` |

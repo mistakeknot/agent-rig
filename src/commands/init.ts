@@ -2,6 +2,7 @@ import chalk from "chalk";
 import { writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { createInterface } from "node:readline";
+import type { AgentRig } from "../schema.js";
 
 async function ask(
   rl: ReturnType<typeof createInterface>,
@@ -28,22 +29,22 @@ export async function initCommand(dir: string) {
 
   rl.close();
 
-  const manifest = {
+  const manifest: Partial<AgentRig> = {
     name,
     version,
     description,
     author,
     license: "MIT",
     plugins: {
-      required: [] as unknown[],
-      recommended: [] as unknown[],
-      conflicts: [] as unknown[],
+      required: [],
+      recommended: [],
+      conflicts: [],
     },
     mcpServers: {},
-    tools: [] as unknown[],
+    tools: [],
     platforms: {
       "claude-code": {
-        marketplaces: [] as unknown[],
+        marketplaces: [],
       },
     },
   };

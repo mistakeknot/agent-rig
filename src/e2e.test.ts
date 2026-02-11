@@ -12,7 +12,7 @@ describe("E2E: Clavain example manifest", () => {
   it("loads and validates the Clavain manifest", async () => {
     const rig = await loadManifest(exampleDir);
     assert.equal(rig.name, "clavain");
-    assert.equal(rig.version, "0.4.2");
+    assert.equal(rig.version, "0.4.16");
     assert.ok(rig.plugins?.required && rig.plugins.required.length > 0);
     assert.ok(rig.plugins?.conflicts && rig.plugins.conflicts.length > 0);
     assert.ok(rig.mcpServers && Object.keys(rig.mcpServers).length > 0);
