@@ -19,6 +19,7 @@ src/
   schema.ts         — agent-rig.json manifest schema (zod)
   loader.ts         — Load + validate manifests from local/GitHub
   state.ts          — Installed rig state (~/.agent-rig/state.json)
+  env.ts            — Shell profile env var management (tagged blocks)
   adapters/
     types.ts        — PlatformAdapter interface
     claude-code.ts  — Claude Code: plugins, MCP servers, behavioral config
@@ -45,4 +46,6 @@ examples/
 - Idempotent install: re-running install on same version is a no-op, different version suggests update
 - Conflict detection: pre-flight scan warns about installed plugins that conflict with the rig
 - Dependency ordering: plugins with `depends` are topologically sorted before install
+- Env vars: written to shell profile as tagged blocks, cleaned up on uninstall
+- Behavioral merge: SHA-256 hash tracks modifications, skips overwrite if user edited the file
 - Tests use Node.js built-in test runner (`node:test`)

@@ -6,6 +6,7 @@ import { execFileAsync, cloneToLocal } from "../exec.js";
 import { ClaudeCodeAdapter } from "../adapters/claude-code.js";
 import { CodexAdapter } from "../adapters/codex.js";
 import { getRigState, setRigState } from "../state.js";
+import { detectShell, hasEnvBlock, writeEnvBlock } from "../env.js";
 import type { InstallResult, PlatformAdapter } from "../adapters/types.js";
 import type { AgentRig } from "../schema.js";
 import type { RigState, InstalledMcpServer, InstalledBehavioral } from "../state.js";
@@ -274,11 +275,26 @@ export async function installCommand(
   const toolResults = await installTools(rig);
   printResults("External Tools", toolResults);
 
+  // Write environment variables to shell profile
+  let envProfilePath: string | undefined;
   if (rig.environment && Object.keys(rig.environment).length > 0) {
+    const shell = detectShell();
     console.log(chalk.bold("\nEnvironment Variables"));
-    console.log(chalk.dim("  Add these to your shell profile:"));
-    for (const [key, value] of Object.entries(rig.environment)) {
-      console.log(`  export ${key}="${value}"`);
+
+    if (hasEnvBlock(rig.name, shell.profilePath)) {
+      console.log(chalk.dim(`  Updating existing block in ${shell.profilePath}`));
+      writeEnvBlock(rig.name, rig.environment, shell);
+      envProfilePath = shell.profilePath;
+      for (const [key, value] of Object.entries(rig.environment)) {
+        console.log(`  ${chalk.green("OK")}  ${key}="${value}"`);
+      }
+    } else {
+      console.log(`  Writing to ${chalk.cyan(shell.profilePath)} (${shell.name}):`);
+      for (const [key, value] of Object.entries(rig.environment)) {
+        console.log(`  ${chalk.green("+")}  ${key}="${value}"`);
+      }
+      writeEnvBlock(rig.name, rig.environment, shell);
+      envProfilePath = shell.profilePath;
     }
   }
 
@@ -321,6 +337,7 @@ export async function installCommand(
     mcpServers: installedMcp,
     behavioral: installedBehavioral,
     marketplaces: installedMarketplaces,
+    envProfilePath,
   };
   setRigState(rigState);
 

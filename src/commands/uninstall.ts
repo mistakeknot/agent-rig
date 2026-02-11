@@ -4,6 +4,7 @@ import { readFileSync, writeFileSync, unlinkSync, existsSync, rmSync } from "nod
 import { join } from "node:path";
 import { getRigState, removeRigState } from "../state.js";
 import { execFileAsync } from "../exec.js";
+import { removeEnvBlock } from "../env.js";
 
 async function run(
   cmd: string,
@@ -58,6 +59,9 @@ export async function uninstallCommand(
   if (state.behavioral.length > 0) {
     console.log(`  ${chalk.red("Remove")} ${state.behavioral.length} behavioral files`);
   }
+  if (state.envProfilePath) {
+    console.log(`  ${chalk.red("Remove")} env vars from ${state.envProfilePath}`);
+  }
 
   if (!opts.yes) {
     const ok = await confirm("\nProceed with uninstall?");
@@ -108,6 +112,13 @@ export async function uninstallCommand(
         console.log(`  ${chalk.green("OK")}  removed pointer from ${behavioral.pointerFile}`);
       }
     }
+  }
+
+  // Remove env vars from shell profile
+  if (state.envProfilePath) {
+    const removed = removeEnvBlock(name, state.envProfilePath);
+    const icon = removed ? chalk.green("OK") : chalk.dim("SKIP");
+    console.log(`  ${icon}  env vars from ${state.envProfilePath}`);
   }
 
   // Clean up rig directory

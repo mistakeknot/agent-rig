@@ -4,6 +4,7 @@ import {
   mkdirSync,
   existsSync,
 } from "node:fs";
+import { createHash } from "node:crypto";
 import { join } from "node:path";
 import type { AgentRig } from "../schema.js";
 import type { InstallResult, ConflictWarning, PlatformAdapter } from "./types.js";
@@ -22,6 +23,10 @@ async function run(
     const message = err instanceof Error ? err.message : String(err);
     return { ok: false, output: message };
   }
+}
+
+function sha256(content: string): string {
+  return createHash("sha256").update(content, "utf-8").digest("hex");
 }
 
 type PluginEntry = { source: string; description?: string; depends?: string[] };
@@ -257,6 +262,17 @@ export class ClaudeCodeAdapter implements PlatformAdapter {
 
     const manifestFiles: string[] = [];
     const manifestPointers: Array<{ file: string; line: string }> = [];
+    const fileHashes: Record<string, string> = {};
+
+    // Load existing manifest hashes for modification detection
+    const manifestPath = join(rigsDir, "install-manifest.json");
+    let manifestHashes: Record<string, string> = {};
+    if (existsSync(manifestPath)) {
+      try {
+        const existing = JSON.parse(readFileSync(manifestPath, "utf-8"));
+        manifestHashes = existing.fileHashes ?? {};
+      } catch { /* ignore */ }
+    }
 
     for (const asset of assets) {
       const config =
@@ -275,11 +291,31 @@ export class ClaudeCodeAdapter implements PlatformAdapter {
       }
 
       const content = readFileSync(sourcePath, "utf-8");
+      const newHash = sha256(content);
 
-      // Write to namespaced location
+      // Write to namespaced location (with modification check)
       const destPath = join(rigsDir, asset.targetFilename);
+
+      if (existsSync(destPath)) {
+        // Check if user modified the installed file
+        const existingContent = readFileSync(destPath, "utf-8");
+        const existingHash = sha256(existingContent);
+        const installedHash = manifestHashes[destPath];
+
+        if (installedHash && existingHash !== installedHash && existingHash !== newHash) {
+          // User modified the file AND new content differs from current
+          results.push({
+            component: `behavioral:${asset.key}`,
+            status: "skipped",
+            message: `locally modified — use --force to overwrite (${destPath})`,
+          });
+          continue;
+        }
+      }
+
       writeFileSync(destPath, content, "utf-8");
       manifestFiles.push(destPath);
+      fileHashes[destPath] = newHash;
 
       // Add pointer to root file (idempotent)
       const pointerTag = `<!-- agent-rig:${rigName} -->`;
@@ -320,14 +356,14 @@ export class ClaudeCodeAdapter implements PlatformAdapter {
       }
     }
 
-    // Write install manifest
-    const manifestPath = join(rigsDir, "install-manifest.json");
+    // Write install manifest with file hashes for modification detection
     const manifest = {
       rig: rigName,
       version: rig.version,
       installedAt: new Date().toISOString(),
       files: manifestFiles,
       pointers: manifestPointers,
+      fileHashes,
     };
     writeFileSync(manifestPath, JSON.stringify(manifest, null, 2), "utf-8");
 

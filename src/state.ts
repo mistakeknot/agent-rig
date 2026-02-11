@@ -23,6 +23,7 @@ export interface RigState {
   mcpServers: InstalledMcpServer[];
   behavioral: InstalledBehavioral[];
   marketplaces: string[];
+  envProfilePath?: string;
 }
 
 export interface StateFile {
