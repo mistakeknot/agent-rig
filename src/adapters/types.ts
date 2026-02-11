@@ -6,9 +6,16 @@ export interface InstallResult {
   message?: string;
 }
 
+export interface ConflictWarning {
+  installedPlugin: string;
+  conflictsWith: string;
+  reason?: string;
+}
+
 export interface PlatformAdapter {
   name: string;
   detect(): Promise<boolean>;
+  checkConflicts(rig: AgentRig): Promise<ConflictWarning[]>;
   installPlugins(rig: AgentRig): Promise<InstallResult[]>;
   disableConflicts(rig: AgentRig): Promise<InstallResult[]>;
   addMarketplaces(rig: AgentRig): Promise<InstallResult[]>;

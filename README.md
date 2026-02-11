@@ -154,7 +154,10 @@ Each tool specifies:
 
 | Command | Description |
 |---------|-------------|
-| `agent-rig install <source>` | Install a rig from GitHub or local path |
+| `agent-rig install <source>` | Install a rig (idempotent, conflict-aware) |
+| `agent-rig update <name>` | Update an installed rig to the latest version |
+| `agent-rig outdated [name]` | Check if installed rigs have newer versions |
+| `agent-rig upstream <source>` | Check a rig against upstream marketplace versions |
 | `agent-rig uninstall <name>` | Uninstall a rig and reverse its changes |
 | `agent-rig status` | Show installed rigs and their components |
 | `agent-rig inspect <source>` | Examine a rig's contents without installing |
@@ -178,12 +181,19 @@ The manifest format is platform-agnostic. Additional adapters can be added for o
 4. Run `agent-rig validate` to check the manifest
 5. Push to GitHub — anyone can now install it with `agent-rig install owner/repo`
 
+### Install flags
+
+| Flag | Description |
+|------|-------------|
+| `--dry-run` | Show what would be installed without making changes |
+| `--force` | Re-install even if same version is already installed |
+| `-y, --yes` | Skip confirmation prompt |
+
 ## Future (v2)
 
 - **Rig composition** — `extends: "owner/base-rig"` for layered rigs
 - **Lockfiles** — `agent-rig.lock` for reproducible installs
 - **Profiles** — `--profile=go` vs `--profile=python` variants
-- **Update/outdated** — Check for newer versions of rig components
 
 ## License
 

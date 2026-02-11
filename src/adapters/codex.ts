@@ -1,5 +1,5 @@
 import type { AgentRig } from "../schema.js";
-import type { InstallResult, PlatformAdapter } from "./types.js";
+import type { InstallResult, ConflictWarning, PlatformAdapter } from "./types.js";
 import { execFileAsync } from "../exec.js";
 
 export class CodexAdapter implements PlatformAdapter {
@@ -12,6 +12,10 @@ export class CodexAdapter implements PlatformAdapter {
     } catch {
       return false;
     }
+  }
+
+  async checkConflicts(_rig: AgentRig): Promise<ConflictWarning[]> {
+    return [];
   }
 
   async addMarketplaces(_rig: AgentRig): Promise<InstallResult[]> {

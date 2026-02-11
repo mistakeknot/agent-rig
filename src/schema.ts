@@ -5,6 +5,10 @@ import { z } from "zod";
 const PluginRef = z.object({
   source: z.string().describe("Plugin identifier: name@marketplace"),
   description: z.string().optional(),
+  depends: z
+    .array(z.string())
+    .optional()
+    .describe("Plugin sources this plugin depends on (installed first)"),
 });
 
 const ConflictRef = z.object({

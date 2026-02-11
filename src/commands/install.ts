@@ -5,7 +5,7 @@ import { resolveSource } from "../loader.js";
 import { execFileAsync, cloneToLocal } from "../exec.js";
 import { ClaudeCodeAdapter } from "../adapters/claude-code.js";
 import { CodexAdapter } from "../adapters/codex.js";
-import { setRigState } from "../state.js";
+import { getRigState, setRigState } from "../state.js";
 import type { InstallResult, PlatformAdapter } from "../adapters/types.js";
 import type { AgentRig } from "../schema.js";
 import type { RigState, InstalledMcpServer, InstalledBehavioral } from "../state.js";
@@ -132,7 +132,7 @@ async function installTools(rig: AgentRig): Promise<InstallResult[]> {
 
 export async function installCommand(
   sourceArg: string,
-  opts: { dryRun?: boolean; yes?: boolean },
+  opts: { dryRun?: boolean; yes?: boolean; force?: boolean },
 ) {
   console.log(chalk.bold(`\nAgent Rig Installer\n`));
 
@@ -144,6 +144,28 @@ export async function installCommand(
     `Installing ${chalk.cyan(rig.name)} v${rig.version}` +
       (rig.description ? chalk.dim(` — ${rig.description}`) : ""),
   );
+
+  // Idempotency: check if already installed
+  const existing = getRigState(rig.name);
+  if (existing && !opts.force && !opts.dryRun) {
+    if (existing.version === rig.version) {
+      console.log(
+        chalk.green(`\n${rig.name} v${rig.version} is already installed.\n`),
+      );
+      console.log(chalk.dim("Use --force to re-apply, or 'agent-rig update' if a newer version is available."));
+      return;
+    }
+
+    // Different version — suggest update
+    console.log(
+      chalk.yellow(
+        `\n${rig.name} v${existing.version} is already installed. ` +
+          `New version: v${rig.version}.`,
+      ),
+    );
+    console.log(chalk.dim("Use 'agent-rig update' to apply changes incrementally, or --force to re-install from scratch."));
+    return;
+  }
 
   if (opts.dryRun) {
     console.log(chalk.yellow("\nDry run — no changes will be made.\n"));
@@ -186,6 +208,23 @@ export async function installCommand(
       ),
     );
     process.exit(1);
+  }
+
+  // Pre-flight conflict scan
+  for (const adapter of activeAdapters) {
+    const warnings = await adapter.checkConflicts(rig);
+    if (warnings.length > 0) {
+      console.log(chalk.bold.yellow(`\n⚠ Potential conflicts (${adapter.name}):`));
+      for (const w of warnings) {
+        console.log(
+          `  ${chalk.yellow("!")}  ${w.installedPlugin} ↔ ${w.conflictsWith}` +
+            (w.reason ? chalk.dim(` — ${w.reason}`) : ""),
+        );
+      }
+      console.log(
+        chalk.dim("  These will be disabled during install if declared in the rig manifest."),
+      );
+    }
   }
 
   // Show install plan and require confirmation

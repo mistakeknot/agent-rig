@@ -6,7 +6,7 @@ import {
 } from "node:fs";
 import { join } from "node:path";
 import type { AgentRig } from "../schema.js";
-import type { InstallResult, PlatformAdapter } from "./types.js";
+import type { InstallResult, ConflictWarning, PlatformAdapter } from "./types.js";
 import { execFileAsync } from "../exec.js";
 
 async function run(
@@ -24,12 +24,106 @@ async function run(
   }
 }
 
+type PluginEntry = { source: string; description?: string; depends?: string[] };
+
+/** Topological sort — dependencies before dependents. Falls back to original order on cycles. */
+function topoSortPlugins(plugins: PluginEntry[]): PluginEntry[] {
+  const bySource = new Map(plugins.map((p) => [p.source, p]));
+  const visited = new Set<string>();
+  const ordered: PluginEntry[] = [];
+
+  function visit(source: string) {
+    if (visited.has(source)) return;
+    visited.add(source);
+    const plugin = bySource.get(source);
+    if (!plugin) return;
+    for (const dep of plugin.depends ?? []) {
+      visit(dep);
+    }
+    ordered.push(plugin);
+  }
+
+  for (const plugin of plugins) {
+    visit(plugin.source);
+  }
+
+  return ordered;
+}
+
 export class ClaudeCodeAdapter implements PlatformAdapter {
   name = "claude-code";
 
   async detect(): Promise<boolean> {
     const { ok } = await run("claude", ["--version"]);
     return ok;
+  }
+
+  async checkConflicts(rig: AgentRig): Promise<ConflictWarning[]> {
+    const warnings: ConflictWarning[] = [];
+
+    // Get currently installed plugins
+    const { ok, output } = await run("claude", ["plugin", "list"]);
+    if (!ok) return warnings;
+
+    // Parse installed plugin names from the output
+    const installedPlugins = new Set(
+      output
+        .split("\n")
+        .map((line) => line.trim())
+        .filter((line) => line.length > 0 && !line.startsWith("─")),
+    );
+
+    // Check declared conflicts that are already installed and NOT already disabled
+    const declaredConflicts = rig.plugins?.conflicts ?? [];
+    for (const conflict of declaredConflicts) {
+      // Extract plugin name from source (e.g. "code-review@claude-plugins-official" → "code-review")
+      const pluginName = conflict.source.split("@")[0];
+      if (installedPlugins.has(pluginName) || installedPlugins.has(conflict.source)) {
+        warnings.push({
+          installedPlugin: conflict.source,
+          conflictsWith: "rig declaration",
+          reason: conflict.reason ?? "Declared as conflicting in rig manifest",
+        });
+      }
+    }
+
+    // Check rig plugins against installed — warn if rig is installing
+    // a plugin that shares a name prefix with an existing one
+    const rigPluginNames = [
+      ...(rig.plugins?.core ? [rig.plugins.core.source] : []),
+      ...(rig.plugins?.required ?? []).map((p) => p.source),
+      ...(rig.plugins?.recommended ?? []).map((p) => p.source),
+      ...(rig.plugins?.infrastructure ?? []).map((p) => p.source),
+    ].map((s) => s.split("@")[0]);
+
+    // Look for installed plugins that overlap with rig plugins but aren't in the conflict list
+    const declaredConflictNames = new Set(
+      declaredConflicts.map((c) => c.source.split("@")[0]),
+    );
+    const rigPluginSet = new Set(rigPluginNames);
+
+    for (const installed of installedPlugins) {
+      // Skip if it's one of the rig's own plugins or already in the conflict list
+      if (rigPluginSet.has(installed) || declaredConflictNames.has(installed)) {
+        continue;
+      }
+
+      // Heuristic: warn if an installed plugin name overlaps significantly with a rig plugin
+      for (const rigPlugin of rigPluginNames) {
+        if (
+          installed.includes(rigPlugin) ||
+          rigPlugin.includes(installed)
+        ) {
+          warnings.push({
+            installedPlugin: installed,
+            conflictsWith: rigPlugin,
+            reason: "Potential overlap (name similarity)",
+          });
+        }
+      }
+    }
+
+    return warnings;
   }
 
   async addMarketplaces(rig: AgentRig): Promise<InstallResult[]> {
@@ -61,7 +155,10 @@ export class ClaudeCodeAdapter implements PlatformAdapter {
       ...(rig.plugins?.infrastructure ?? []),
     ];
 
-    for (const plugin of plugins) {
+    // Topological sort: install dependencies before dependents
+    const ordered = topoSortPlugins(plugins);
+
+    for (const plugin of ordered) {
       const { ok, output } = await run("claude", [
         "plugin",
         "install",

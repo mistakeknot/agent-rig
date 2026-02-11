@@ -24,8 +24,10 @@ src/
     claude-code.ts  — Claude Code: plugins, MCP servers, behavioral config
     codex.ts        — Codex CLI installation
   commands/
-    install.ts      — agent-rig install <source>
+    install.ts      — agent-rig install <source> (idempotent, conflict-aware)
     uninstall.ts    — agent-rig uninstall <name>
+    update.ts       — agent-rig update <name> / outdated [name]
+    upstream.ts     — agent-rig upstream <source>
     status.ts       — agent-rig status
     validate.ts     — agent-rig validate [dir]
     inspect.ts      — agent-rig inspect <source>
@@ -40,4 +42,7 @@ examples/
 - Schema validation: zod schemas in `schema.ts`, validated at load time
 - Source resolution: `resolveSource()` handles GitHub URLs, owner/repo, and local paths
 - State tracking: `~/.agent-rig/state.json` records what each rig installed for clean uninstall
+- Idempotent install: re-running install on same version is a no-op, different version suggests update
+- Conflict detection: pre-flight scan warns about installed plugins that conflict with the rig
+- Dependency ordering: plugins with `depends` are topologically sorted before install
 - Tests use Node.js built-in test runner (`node:test`)
