@@ -128,4 +128,4 @@ The install command collects results from each adapter step, filters for `status
 
 ## Related Issues
 
-No related issues documented yet.
+- See also: [state-diff-incremental-update-agent-rig-20260211.md](state-diff-incremental-update-agent-rig-20260211.md) — P2 extension (diff-based update, idempotent install, dependency ordering)
