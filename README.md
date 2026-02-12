@@ -28,10 +28,10 @@ Installing `clavain@interagency-marketplace` gives you the plugin. Running `agen
 
 ```bash
 # From a GitHub repo
-npx agent-rig install mistakeknot/Clavain
+npx @gensysven/agent-rig install mistakeknot/Clavain
 
 # From a local directory
-npx agent-rig install ./my-rig
+npx @gensysven/agent-rig install ./my-rig
 
 # Dry run (see what would be installed)
 npx agent-rig install --dry-run mistakeknot/Clavain

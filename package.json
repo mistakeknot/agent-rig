@@ -1,5 +1,5 @@
 {
-  "name": "agent-rig",
+  "name": "@gensysven/agent-rig",
   "version": "0.1.0",
   "description": "The rig manager for AI coding agents — package, share, and install complete agent environments with one command",
   "repository": {
