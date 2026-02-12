@@ -1,6 +1,6 @@
 # agent-rig
 
-The rig manager for AI coding agents.
+The rig manager for AI coding agents. Published as `@gensysven/agent-rig` on npm.
 
 A plugin adds capabilities. A rig creates the environment where those capabilities work together — companion plugins, conflict resolution, MCP servers, CLI tools, env vars, behavioral config, and platform adapters. Installing a plugin gives you skills and commands. Installing a rig gives you the whole working environment.
 
@@ -9,7 +9,10 @@ A plugin adds capabilities. A rig creates the environment where those capabiliti
 - **Build:** `pnpm build`
 - **Test:** `pnpm build && node --test dist/**/*.test.js`
 - **Run:** `node dist/index.js <command>`
+- **Install globally:** `npx @gensysven/agent-rig install mistakeknot/Clavain`
 - **Entry point:** `src/index.ts`
+- **npm:** `@gensysven/agent-rig`
+- **GitHub:** `mistakeknot/agent-rig`
 
 ## Architecture
 
