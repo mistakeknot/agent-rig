@@ -1,11 +1,16 @@
 {
   "name": "agent-rig",
   "version": "0.1.0",
-  "description": "The modpack system for AI coding agents — package, share, and install complete agent rigs with one command",
+  "description": "The rig manager for AI coding agents — package, share, and install complete agent environments with one command",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mistakeknot/agent-rig.git"
+  },
   "type": "module",
   "bin": {
     "agent-rig": "./dist/index.js"
   },
+  "files": ["dist", "README.md"],
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
@@ -22,7 +27,7 @@
   "keywords": [
     "agent-rig",
     "claude-code",
-    "modpack",
+    "rig-manager",
     "plugins",
     "mcp",
     "codex"
