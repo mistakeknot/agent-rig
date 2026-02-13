@@ -21,6 +21,10 @@ program
   .description("Install an agent rig from a GitHub repo or local path")
   .option("--dry-run", "Show what would be installed without making changes")
   .option("--force", "Re-install even if already installed")
+  .option(
+    "--minimal",
+    "Install only core and required plugins, skip recommended and infrastructure",
+  )
   .option("-y, --yes", "Skip confirmation prompt")
   .action(installCommand);
 

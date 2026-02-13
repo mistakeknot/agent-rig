@@ -2,7 +2,7 @@ import chalk from "chalk";
 import { createInterface } from "node:readline";
 import { loadManifest } from "../loader.js";
 import { resolveSource } from "../loader.js";
-import { execFileAsync, cloneToLocal } from "../exec.js";
+import { execFileAsync, cloneToLocal, cleanupCloneDir } from "../exec.js";
 import { ClaudeCodeAdapter } from "../adapters/claude-code.js";
 import { CodexAdapter } from "../adapters/codex.js";
 import { getRigState, setRigState } from "../state.js";
@@ -133,14 +133,21 @@ async function installTools(rig: AgentRig): Promise<InstallResult[]> {
 
 export async function installCommand(
   sourceArg: string,
-  opts: { dryRun?: boolean; yes?: boolean; force?: boolean },
+  opts: { dryRun?: boolean; yes?: boolean; force?: boolean; minimal?: boolean },
 ) {
   console.log(chalk.bold(`\nAgent Rig Installer\n`));
 
   const source = resolveSource(sourceArg);
   const dir = await cloneToLocal(source);
-
-  const rig = await loadManifest(dir);
+  try {
+    const rig = await loadManifest(dir);
+    if (opts.minimal) {
+      console.log(chalk.yellow("Minimal mode: installing core + required only.\n"));
+      if (rig.plugins) {
+        rig.plugins.recommended = [];
+        rig.plugins.infrastructure = [];
+      }
+    }
   console.log(
     `Installing ${chalk.cyan(rig.name)} v${rig.version}` +
       (rig.description ? chalk.dim(` — ${rig.description}`) : ""),
@@ -352,4 +359,7 @@ export async function installCommand(
   );
   console.log(chalk.dim("State saved to ~/.agent-rig/state.json"));
   console.log("Restart your Claude Code session to activate all changes.");
+  } finally {
+    await cleanupCloneDir(dir, source);
+  }
 }

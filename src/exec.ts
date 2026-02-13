@@ -1,4 +1,5 @@
 import { execFile } from "node:child_process";
+import { rm } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { promisify } from "node:util";
@@ -16,4 +17,13 @@ export async function cloneToLocal(source: RigSource): Promise<string> {
     timeout: 60_000,
   });
   return dest;
+}
+
+export async function cleanupCloneDir(dir: string, source: RigSource): Promise<void> {
+  if (source.type === "local") return;
+  try {
+    await rm(dir, { recursive: true, force: true });
+  } catch {
+    // Best-effort cleanup
+  }
 }
