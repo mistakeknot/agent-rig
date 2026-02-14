@@ -25,6 +25,10 @@ program
     "--minimal",
     "Install only core and required plugins, skip recommended and infrastructure",
   )
+  .option(
+    "--include-optional",
+    "Attempt to install optional tools instead of skipping them",
+  )
   .option("-y, --yes", "Skip confirmation prompt")
   .action(installCommand);
 

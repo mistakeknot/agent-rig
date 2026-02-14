@@ -2,7 +2,7 @@ import chalk from "chalk";
 import { createInterface } from "node:readline";
 import { loadManifest } from "../loader.js";
 import { resolveSource } from "../loader.js";
-import { execFileAsync, cloneToLocal, cleanupCloneDir } from "../exec.js";
+import { execFileAsync, spawnStreaming, cloneToLocal, cleanupCloneDir } from "../exec.js";
 import { ClaudeCodeAdapter } from "../adapters/claude-code.js";
 import { CodexAdapter } from "../adapters/codex.js";
 import { getRigState, setRigState } from "../state.js";
@@ -38,7 +38,7 @@ async function confirm(message: string): Promise<boolean> {
   });
 }
 
-function printInstallPlan(rig: AgentRig, activeAdapters: PlatformAdapter[]) {
+function printInstallPlan(rig: AgentRig, activeAdapters: PlatformAdapter[], opts?: { includeOptional?: boolean }) {
   console.log(chalk.bold("\nInstall Plan:"));
 
   const plugins = [
@@ -71,9 +71,16 @@ function printInstallPlan(rig: AgentRig, activeAdapters: PlatformAdapter[]) {
     }
   }
   if (optTools.length > 0) {
-    console.log(`  ${chalk.dim("Skip")} ${optTools.length} optional tools (check commands):`);
-    for (const t of optTools) {
-      console.log(chalk.dim(`    check: $ ${t.check}`));
+    if (opts?.includeOptional) {
+      console.log(`  ${chalk.magenta("Install")} ${optTools.length} optional tools:`);
+      for (const t of optTools) {
+        console.log(chalk.dim(`    ${t.name}: $ ${t.install}`));
+      }
+    } else {
+      console.log(`  ${chalk.dim("Optional")} ${optTools.length} tools (use --include-optional to install):`);
+      for (const t of optTools) {
+        console.log(chalk.dim(`    ${t.name}: $ ${t.install}`));
+      }
     }
   }
 
@@ -91,7 +98,10 @@ function printInstallPlan(rig: AgentRig, activeAdapters: PlatformAdapter[]) {
   console.log(`  Platforms: ${activeAdapters.map((a) => a.name).join(", ")}`);
 }
 
-async function installTools(rig: AgentRig): Promise<InstallResult[]> {
+async function installTools(
+  rig: AgentRig,
+  opts: { includeOptional?: boolean },
+): Promise<InstallResult[]> {
   const results: InstallResult[] = [];
   for (const tool of rig.tools ?? []) {
     // Check if already installed
@@ -107,18 +117,39 @@ async function installTools(rig: AgentRig): Promise<InstallResult[]> {
       // Not installed
     }
 
-    if (tool.optional) {
+    if (tool.optional && !opts.includeOptional) {
       results.push({
         component: `tool:${tool.name}`,
         status: "skipped",
-        message: "optional — install manually",
+        message: `optional — install manually: ${tool.install}`,
       });
       continue;
     }
 
     try {
-      await execFileAsync("sh", ["-c", tool.install], { timeout: 120_000 });
-      results.push({ component: `tool:${tool.name}`, status: "installed" });
+      console.log(chalk.dim(`  Installing ${tool.name}...\n`));
+      const { code } = await spawnStreaming(tool.install, { timeout: 120_000 });
+
+      if (code !== 0) {
+        results.push({
+          component: `tool:${tool.name}`,
+          status: "failed",
+          message: `install command exited with code ${code}`,
+        });
+        continue;
+      }
+
+      // Post-install verification: re-run the check command
+      try {
+        await execFileAsync("sh", ["-c", tool.check], { timeout: 5_000 });
+        results.push({ component: `tool:${tool.name}`, status: "installed" });
+      } catch {
+        results.push({
+          component: `tool:${tool.name}`,
+          status: "failed",
+          message: "install command succeeded but tool not found on PATH",
+        });
+      }
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err);
       results.push({
@@ -133,7 +164,7 @@ async function installTools(rig: AgentRig): Promise<InstallResult[]> {
 
 export async function installCommand(
   sourceArg: string,
-  opts: { dryRun?: boolean; yes?: boolean; force?: boolean; minimal?: boolean },
+  opts: { dryRun?: boolean; yes?: boolean; force?: boolean; minimal?: boolean; includeOptional?: boolean },
 ) {
   console.log(chalk.bold(`\nAgent Rig Installer\n`));
 
@@ -187,7 +218,7 @@ export async function installCommand(
     for (const adapter of dryAdapters) {
       if (await adapter.detect()) dryActive.push(adapter);
     }
-    printInstallPlan(rig, dryActive.length > 0 ? dryActive : dryAdapters);
+    printInstallPlan(rig, dryActive.length > 0 ? dryActive : dryAdapters, { includeOptional: opts.includeOptional });
 
     console.log(chalk.dim("\nFull manifest:"));
     console.log(JSON.stringify(rig, null, 2));
@@ -236,7 +267,7 @@ export async function installCommand(
   }
 
   // Show install plan and require confirmation
-  printInstallPlan(rig, activeAdapters);
+  printInstallPlan(rig, activeAdapters, { includeOptional: opts.includeOptional });
 
   if (!opts.yes) {
     const ok = await confirm("\nProceed with installation?");
@@ -279,7 +310,7 @@ export async function installCommand(
     }
   }
 
-  const toolResults = await installTools(rig);
+  const toolResults = await installTools(rig, { includeOptional: opts.includeOptional });
   printResults("External Tools", toolResults);
 
   // Write environment variables to shell profile
