@@ -6,6 +6,7 @@ import {
 } from "node:fs";
 import { createHash } from "node:crypto";
 import { join } from "node:path";
+import { homedir } from "node:os";
 import type { AgentRig } from "../schema.js";
 import type { InstallResult, ConflictWarning, PlatformAdapter } from "./types.js";
 import { execFileAsync } from "../exec.js";
@@ -373,6 +374,7 @@ export class ClaudeCodeAdapter implements PlatformAdapter {
   async verify(rig: AgentRig): Promise<InstallResult[]> {
     const results: InstallResult[] = [];
 
+    // MCP health checks
     for (const [name, server] of Object.entries(rig.mcpServers ?? {})) {
       if (
         server.type === "http" &&
@@ -397,6 +399,72 @@ export class ClaudeCodeAdapter implements PlatformAdapter {
           message: "no health check configured",
         });
       }
+    }
+
+    // Plugin settings verification — check that plugins are actually enabled
+    const settingsPath = join(homedir(), ".claude", "settings.json");
+    if (existsSync(settingsPath)) {
+      try {
+        const settings = JSON.parse(readFileSync(settingsPath, "utf-8"));
+        const enabledPlugins: Record<string, boolean> = settings.enabledPlugins ?? {};
+
+        const allPlugins = [
+          ...(rig.plugins?.core ? [rig.plugins.core] : []),
+          ...(rig.plugins?.required ?? []),
+          ...(rig.plugins?.recommended ?? []),
+          ...(rig.plugins?.infrastructure ?? []),
+        ];
+
+        for (const plugin of allPlugins) {
+          const pluginName = plugin.source.split("@")[0];
+          // Check by name — settings uses the short name
+          const isEnabled = Object.entries(enabledPlugins).some(
+            ([key, val]) => val && (key === pluginName || key.includes(pluginName)),
+          );
+
+          if (isEnabled) {
+            results.push({
+              component: `settings:${pluginName}`,
+              status: "installed",
+              message: "enabled in settings",
+            });
+          } else {
+            results.push({
+              component: `settings:${pluginName}`,
+              status: "failed",
+              message: "NOT enabled in settings — may need manual activation",
+            });
+          }
+        }
+
+        // Check disabled conflicts are actually disabled
+        for (const conflict of rig.plugins?.conflicts ?? []) {
+          const conflictName = conflict.source.split("@")[0];
+          const isEnabled = Object.entries(enabledPlugins).some(
+            ([key, val]) => val && (key === conflictName || key.includes(conflictName)),
+          );
+
+          if (isEnabled) {
+            results.push({
+              component: `settings:${conflictName}`,
+              status: "failed",
+              message: "conflict still ENABLED in settings — disable manually",
+            });
+          }
+        }
+      } catch {
+        results.push({
+          component: "settings",
+          status: "skipped",
+          message: "could not read ~/.claude/settings.json",
+        });
+      }
+    } else {
+      results.push({
+        component: "settings",
+        status: "skipped",
+        message: "~/.claude/settings.json not found (will be created on next session)",
+      });
     }
 
     return results;

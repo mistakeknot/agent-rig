@@ -38,6 +38,50 @@ async function confirm(message: string): Promise<boolean> {
   });
 }
 
+async function promptLine(message: string): Promise<string> {
+  const rl = createInterface({ input: process.stdin, output: process.stdout });
+  return new Promise((resolve) => {
+    rl.question(message, (answer) => {
+      rl.close();
+      resolve(answer.trim());
+    });
+  });
+}
+
+type PluginRef = { source: string; description?: string; depends?: string[] };
+
+/** Interactive multi-select for infrastructure plugins. Returns the selected subset. */
+async function selectInfraPlugins(plugins: PluginRef[]): Promise<PluginRef[]> {
+  if (plugins.length === 0) return [];
+
+  console.log(chalk.bold("\nInfrastructure plugins (select which to install):"));
+  for (let i = 0; i < plugins.length; i++) {
+    const p = plugins[i];
+    const name = p.source.split("@")[0];
+    const desc = p.description ? chalk.dim(` — ${p.description}`) : "";
+    console.log(`  ${chalk.cyan(String(i + 1))}. ${name}${desc}`);
+  }
+  console.log(chalk.dim(`\n  Enter numbers separated by commas (e.g. 1,3), "all", or "none":`));
+
+  const answer = await promptLine("  > ");
+
+  if (answer.toLowerCase() === "none" || answer === "") return [];
+  if (answer.toLowerCase() === "all") return plugins;
+
+  const indices = answer
+    .split(",")
+    .map((s) => parseInt(s.trim(), 10) - 1)
+    .filter((i) => i >= 0 && i < plugins.length);
+
+  const selected = indices.map((i) => plugins[i]);
+  if (selected.length === 0) {
+    console.log(chalk.yellow("  No valid selections — skipping infrastructure plugins."));
+  } else {
+    console.log(chalk.green(`  Selected: ${selected.map((p) => p.source.split("@")[0]).join(", ")}`));
+  }
+  return selected;
+}
+
 function printInstallPlan(rig: AgentRig, activeAdapters: PlatformAdapter[], opts?: { includeOptional?: boolean }) {
   console.log(chalk.bold("\nInstall Plan:"));
 
@@ -164,7 +208,7 @@ async function installTools(
 
 export async function installCommand(
   sourceArg: string,
-  opts: { dryRun?: boolean; yes?: boolean; force?: boolean; minimal?: boolean; includeOptional?: boolean },
+  opts: { dryRun?: boolean; yes?: boolean; force?: boolean; minimal?: boolean; includeOptional?: boolean; interactive?: boolean },
 ) {
   console.log(chalk.bold(`\nAgent Rig Installer\n`));
 
@@ -178,6 +222,9 @@ export async function installCommand(
         rig.plugins.recommended = [];
         rig.plugins.infrastructure = [];
       }
+    }
+    if (opts.interactive && !opts.minimal && !opts.dryRun && rig.plugins?.infrastructure?.length) {
+      rig.plugins.infrastructure = await selectInfraPlugins(rig.plugins.infrastructure);
     }
   console.log(
     `Installing ${chalk.cyan(rig.name)} v${rig.version}` +

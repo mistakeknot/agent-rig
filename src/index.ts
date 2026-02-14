@@ -29,6 +29,10 @@ program
     "--include-optional",
     "Attempt to install optional tools instead of skipping them",
   )
+  .option(
+    "--interactive",
+    "Interactively select infrastructure plugins to install",
+  )
   .option("-y, --yes", "Skip confirmation prompt")
   .action(installCommand);
 
