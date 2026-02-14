@@ -437,6 +437,17 @@ export async function installCommand(
   );
   console.log(chalk.dim("State saved to ~/.agent-rig/state.json"));
   console.log("Restart your Claude Code session to activate all changes.");
+
+  // Print post-install message from manifest
+  if (rig.postInstall?.message) {
+    const lines = Array.isArray(rig.postInstall.message)
+      ? rig.postInstall.message
+      : [rig.postInstall.message];
+    console.log("");
+    for (const line of lines) {
+      console.log(chalk.cyan(line));
+    }
+  }
   } finally {
     await cleanupCloneDir(dir, source);
   }

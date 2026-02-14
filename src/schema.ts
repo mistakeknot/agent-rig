@@ -142,6 +142,16 @@ export const AgentRigSchema = z.object({
   // Layer 5: Behavioral config (CLAUDE.md, AGENTS.md)
   behavioral: Behavioral.optional(),
 
+  // Post-install hooks
+  postInstall: z
+    .object({
+      message: z
+        .union([z.string(), z.array(z.string())])
+        .optional()
+        .describe("Message(s) to display after successful installation"),
+    })
+    .optional(),
+
   // Platform-specific configuration
   platforms: Platforms.optional(),
 });
