@@ -1,10 +1,10 @@
 # agent-rig
 
-The rig manager for AI coding agents — package, share, and install complete agent environments with one command.
+The rig manager for AI coding agents: package, share, and install complete agent environments with one command.
 
-## Plugins vs Rigs
+## Plugins vs rigs
 
-A **plugin** adds capabilities to your agent — skills, commands, hooks, MCP servers. It's what your agent *can do*.
+A **plugin** adds capabilities to your agent: skills, commands, hooks, MCP servers. It's what your agent *can do*.
 
 A **rig** creates the environment where those capabilities work together. On top of a core plugin, a rig manages:
 
@@ -20,9 +20,9 @@ A **rig** creates the environment where those capabilities work together. On top
 
 > **A plugin adds capabilities. A rig creates the environment where those capabilities work together.**
 
-Installing `clavain@interagency-marketplace` gives you the plugin. Running `agent-rig install mistakeknot/Clavain` gives you the plugin *plus* companion plugins, disables conflicting ones, sets up MCP servers, checks CLI tools, writes env vars to your shell profile, and installs behavioral conventions — all in one command.
+Installing `clavain@interagency-marketplace` gives you the plugin. Running `agent-rig install mistakeknot/Clavain` gives you the plugin *plus* companion plugins, disables conflicting ones, sets up MCP servers, checks CLI tools, writes env vars to your shell profile, and installs behavioral conventions: all in one command.
 
-## Quick Start
+## Quick start
 
 ### Install a rig
 
@@ -49,7 +49,7 @@ agent-rig update clavain
 # Check all rigs for newer versions (without applying)
 agent-rig outdated
 
-# Clean uninstall — reverses everything
+# Clean uninstall: reverses everything
 agent-rig uninstall clavain
 ```
 
@@ -72,7 +72,7 @@ agent-rig validate
 
 ## Features
 
-### Autonomous Installation
+### Autonomous installation
 
 agent-rig handles the entire setup process:
 
@@ -83,23 +83,23 @@ agent-rig handles the entire setup process:
 - **Environment variables**: Writes to your shell profile (bash/zsh/fish) as tagged blocks
 - **Behavioral config**: Copies CLAUDE.md/AGENTS.md to namespaced location, adds pointers
 
-### Idempotent and Safe
+### Idempotent and safe
 
 - **Re-install detection**: Same version installed? No-op. Different version? Suggests `update`.
-- **Conflict pre-flight scan**: Warns about already-installed plugins that overlap with the rig — both declared conflicts and heuristic name-similarity matches.
+- **Conflict pre-flight scan**: Warns about already-installed plugins that overlap with the rig: both declared conflicts and heuristic name-similarity matches.
 - **Behavioral file protection**: Tracks SHA-256 hashes of installed files. If you edit a rig's CLAUDE.md, re-install won't silently overwrite your changes.
 - **Tagged env var blocks**: Shell profile entries are wrapped in `# --- agent-rig: <name> ---` markers for clean identification and removal.
 
-### Full Lifecycle Management
+### Full lifecycle management
 
-- **`install`** — First-time setup with confirmation, conflict warnings, and install plan
-- **`update`** — Computes a diff between installed state and latest manifest, applies only what changed (new plugins, removed conflicts, added MCP servers, etc.)
-- **`outdated`** — Read-only check across all installed rigs for newer versions
-- **`upstream`** — Scans marketplace repos for new/removed plugins, checks tool availability
-- **`uninstall`** — Reverses every action: uninstalls plugins, re-enables conflicts, removes MCP servers, cleans env vars from shell profile, removes behavioral files and pointers
-- **`status`** — Shows all installed rigs with their components
+- **`install`**: First-time setup with confirmation, conflict warnings, and install plan
+- **`update`**: Computes a diff between installed state and latest manifest, applies only what changed (new plugins, removed conflicts, added MCP servers, etc.)
+- **`outdated`**: Read-only check across all installed rigs for newer versions
+- **`upstream`**: Scans marketplace repos for new/removed plugins, checks tool availability
+- **`uninstall`**: Reverses every action: uninstalls plugins, re-enables conflicts, removes MCP servers, cleans env vars from shell profile, removes behavioral files and pointers
+- **`status`**: Shows all installed rigs with their components
 
-### State Tracking
+### State tracking
 
 All install actions are recorded in `~/.agent-rig/state.json`. The state tracks only what each install *actually changed* (not what was planned), enabling precise uninstall and accurate update diffs. State includes:
 
@@ -109,7 +109,7 @@ All install actions are recorded in `~/.agent-rig/state.json`. The state tracks 
 - Shell profile path for env var cleanup
 - Marketplace registrations
 
-## CLI Commands
+## CLI commands
 
 | Command | Description |
 |---------|-------------|
@@ -132,7 +132,7 @@ All install actions are recorded in `~/.agent-rig/state.json`. The state tracks 
 | `-y, --yes` | install, update, uninstall | Skip confirmation prompt |
 | `--json` | inspect | Output raw manifest as JSON |
 
-## The `agent-rig.json` Manifest
+## The `agent-rig.json` manifest
 
 Every rig is defined by an `agent-rig.json` at the root of a GitHub repo:
 
@@ -206,7 +206,7 @@ Every rig is defined by an `agent-rig.json` at the root of a GitHub repo:
 }
 ```
 
-### Plugin Categories
+### Plugin categories
 
 | Category | Purpose | Install Behavior |
 |----------|---------|-----------------|
@@ -216,7 +216,7 @@ Every rig is defined by an `agent-rig.json` at the root of a GitHub repo:
 | `infrastructure` | Language servers, domain-specific tools | Always installed |
 | `conflicts` | Plugins that overlap and must be disabled | Always disabled |
 
-### Plugin Dependencies
+### Plugin dependencies
 
 Plugins can declare dependencies to control install order:
 
@@ -230,7 +230,7 @@ Plugins can declare dependencies to control install order:
 
 Dependencies are topologically sorted so they install before dependents.
 
-### MCP Server Types
+### MCP server types
 
 | Type | Transport | Config |
 |------|-----------|--------|
@@ -238,7 +238,7 @@ Dependencies are topologically sorted so they install before dependents.
 | `stdio` | Standard I/O (local process) | `command`, optional `args` |
 | `sse` | Server-Sent Events | `url` |
 
-### Environment Variables
+### Environment variables
 
 Env vars are written to the user's shell profile as tagged blocks:
 
@@ -250,10 +250,10 @@ export MY_API_URL="http://localhost:8080"
 ```
 
 - Auto-detects shell (bash/zsh/fish) and adapts syntax
-- Idempotent — existing blocks are replaced, not duplicated
+- Idempotent: existing blocks are replaced, not duplicated
 - Cleanly removed on `agent-rig uninstall`
 
-### Behavioral Config
+### Behavioral config
 
 Rigs can ship CLAUDE.md and AGENTS.md files that define conventions for the agent:
 
@@ -262,29 +262,29 @@ Rigs can ship CLAUDE.md and AGENTS.md files that define conventions for the agen
 - On re-install, locally modified files are preserved (SHA-256 hash detection)
 - Use `--force` to overwrite local modifications
 
-## Platform Support
+## Platform support
 
 agent-rig detects which platforms are available and installs accordingly:
 
-- **Claude Code** — Plugins, marketplaces, MCP servers, conflicts, behavioral config
-- **Codex CLI** — Runs the rig's Codex install script if configured
+- **Claude Code**: Plugins, marketplaces, MCP servers, conflicts, behavioral config
+- **Codex CLI**: Runs the rig's Codex install script if configured
 
 The manifest format is platform-agnostic. Additional adapters can be added for other agent platforms by implementing the `PlatformAdapter` interface.
 
-## Creating Your Own Rig
+## Creating your own rig
 
 1. Create a GitHub repo for your rig
 2. Run `agent-rig init` to scaffold `agent-rig.json`
 3. Add your plugins, MCP servers, tools, and behavioral config
 4. Run `agent-rig validate` to check the manifest
-5. Push to GitHub — anyone can install with `agent-rig install owner/repo`
+5. Push to GitHub: anyone can install with `agent-rig install owner/repo`
 6. When you release updates, users run `agent-rig update <name>` to get incremental changes
 
 ## Future (v2)
 
-- **Rig composition** — `extends: "owner/base-rig"` for layered rigs
-- **Lockfiles** — `agent-rig.lock` for reproducible installs
-- **Profiles** — `--profile=go` vs `--profile=python` variants
+- **Rig composition**: `extends: "owner/base-rig"` for layered rigs
+- **Lockfiles**: `agent-rig.lock` for reproducible installs
+- **Profiles**: `--profile=go` vs `--profile=python` variants
 
 ## License
 
