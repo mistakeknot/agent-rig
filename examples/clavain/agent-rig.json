@@ -194,7 +194,7 @@
       ]
     },
     "codex": {
-      "installScript": "scripts/install-codex.sh",
+      "installScript": "scripts/install-codex-interverse.sh",
       "skillsDir": "~/.agents/skills/clavain"
     }
   }
