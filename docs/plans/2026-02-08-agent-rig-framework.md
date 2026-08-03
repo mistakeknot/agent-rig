@@ -182,7 +182,7 @@ describe("AgentRigSchema", () => {
           { source: "interdoc@interagency-marketplace", description: "AGENTS.md generation" },
         ],
         recommended: [
-          { source: "serena@claude-plugins-official", description: "Semantic coding tools" },
+          { source: "tldr-swinton@interagency-marketplace", description: "Token-efficient code reconnaissance" },
         ],
         conflicts: [
           { source: "code-review@claude-plugins-official", reason: "Duplicates Clavain's review agents" },

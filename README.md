@@ -10,7 +10,7 @@ A **rig** creates the environment where those capabilities work together. On top
 
 | Layer | What | Example |
 |---|---|---|
-| Plugin ecosystem | Companion plugins the core depends on or works best with | context7, serena, interdoc |
+| Plugin ecosystem | Companion plugins the core depends on or works best with | context7, interdoc, tldr-swinton |
 | Conflict resolution | Plugins that clash and should be disabled | code-review, commit-commands |
 | External tools | CLI tools outside the plugin system | oracle, codex, beads |
 | MCP servers | With richer config than plugin.json allows | health checks, descriptions |
@@ -152,7 +152,7 @@ Every rig is defined by an `agent-rig.json` at the root of a GitHub repo:
       { "source": "pyright-lsp@claude-plugins-official", "description": "Python LSP" }
     ],
     "infrastructure": [
-      { "source": "serena@claude-plugins-official", "description": "Semantic coding" }
+      { "source": "typescript-lsp@claude-plugins-official", "description": "TypeScript language server" }
     ],
     "conflicts": [
       { "source": "code-review@claude-plugins-official", "reason": "Duplicated by rig" }
@@ -200,7 +200,7 @@ Every rig is defined by an `agent-rig.json` at the root of a GitHub repo:
       ]
     },
     "codex": {
-      "installScript": "scripts/install-codex.sh"
+      "installScript": "scripts/install-codex-interverse.sh"
     }
   }
 }

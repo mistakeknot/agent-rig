@@ -44,8 +44,8 @@ describe("AgentRigSchema", () => {
         ],
         recommended: [
           {
-            source: "serena@claude-plugins-official",
-            description: "Semantic coding tools",
+            source: "tldr-swinton@interagency-marketplace",
+            description: "Token-efficient code reconnaissance",
           },
         ],
         conflicts: [

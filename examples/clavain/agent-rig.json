@@ -59,8 +59,8 @@
         "description": "Plugin development tools"
       },
       {
-        "source": "serena@claude-plugins-official",
-        "description": "Semantic coding tools"
+        "source": "tldr-swinton@interagency-marketplace",
+        "description": "Token-efficient code reconnaissance"
       },
       {
         "source": "security-guidance@claude-plugins-official",
