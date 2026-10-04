@@ -128,13 +128,6 @@ Tests use Node.js built-in test runner (`node:test`). Test files are co-located 
 
 See `README.md` for the full `agent-rig.json` format reference. The Clavain example at `examples/clavain/agent-rig.json` is the canonical reference implementation with all layers populated.
 
-## Solution Documentation
-
-Institutional knowledge is captured in `docs/solutions/best-practices/`:
-- **reversible-cli-install-with-mcp-config** — P1: MCP server config, state tracking, uninstall
-- **state-diff-incremental-update** — P2: diff-based updates, idempotent install, dependency ordering
-- **tagged-block-env-and-hash-based-merge** — P3: shell profile management, behavioral file protection
-
 ## Session Completion
 
-> See `/root/projects/Interverse/AGENTS.md` for session completion protocol.
+> See the workspace-root `AGENTS.md` for the session completion protocol.
